@@ -394,8 +394,12 @@ PerlZMQ_Raw_zmq_recv(socket, flags = 0)
         zmq_msg_t msg;
     CODE:
         RETVAL = NULL;
+#if (ZMQ_VERSION_MAJOR < 3)
         zmq_msg_init(&msg);
         rv = zmq_recv(socket, &msg, flags);
+#else
+        rv = zmq_recvmsg(socket, &msg, flags);
+#endif
         PerlZMQ_trace("zmq recv with flags %d", flags);
         PerlZMQ_trace("zmq_recv returned with rv '%d'", rv);
         if (rv != 0) {
@@ -432,12 +436,16 @@ PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
             if (msg == NULL) {
                 croak("Got invalid message object");
             }
-            
+#if (ZMQ_VERSION_MAJOR < 3)
             RETVAL = zmq_send(socket, msg, flags);
+#else
+            RETVAL = zmq_sendmsg(socket, msg, flags);
+#endif
         } else {
             STRLEN data_len;
-            char *x_data;
             char *data = SvPV(message, data_len);
+#if (ZMQ_VERSION_MAJOR < 3)
+            char *x_data;
             zmq_msg_t msg;
 
             Newxz(x_data, data_len, char);
@@ -445,6 +453,9 @@ PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
             zmq_msg_init_data(&msg, x_data, data_len, PerlZMQ_free_string, NULL);
             RETVAL = zmq_send(socket, &msg, flags);
             zmq_msg_close( &msg ); 
+#else
+            RETVAL = zmq_send(socket, data, data_len, flags);
+#endif
         }
     OUTPUT:
         RETVAL
@@ -473,19 +484,21 @@ PerlZMQ_Raw_zmq_getsockopt(sock, option)
                 if(status == 0)
                     RETVAL = newSViv(i);
                 break;
-
-            case ZMQ_RCVMORE:
+#if (ZMQ_VERSION_MAJOR < 3)
             case ZMQ_SWAP:
+            case ZMQ_MCAST_LOOP:
+#endif
+            case ZMQ_RCVMORE:
             case ZMQ_RATE:
             case ZMQ_RECOVERY_IVL:
-            case ZMQ_MCAST_LOOP:
                 len = sizeof(i64);
                 status = zmq_getsockopt(sock, option, &i64, &len);
                 if(status == 0)
                     RETVAL = newSViv(i64);
                 break;
-
+#if (ZMQ_VERSION_MAJOR < 3)
             case ZMQ_HWM:
+#endif
             case ZMQ_AFFINITY:
             case ZMQ_SNDBUF:
             case ZMQ_RCVBUF:
@@ -545,16 +558,18 @@ PerlZMQ_Raw_zmq_setsockopt(sock, option, value)
                 ptr = SvPV(value, len);
                 RETVAL = zmq_setsockopt(sock, option, ptr, len);
                 break;
-
+#if (ZMQ_VERSION_MAJOR < 3)
             case ZMQ_SWAP:
+            case ZMQ_MCAST_LOOP:
+#endif
             case ZMQ_RATE:
             case ZMQ_RECOVERY_IVL:
-            case ZMQ_MCAST_LOOP:
                 i64 = SvIV(value);
                 RETVAL = zmq_setsockopt(sock, option, &i64, sizeof(int64_t));
                 break;
-
+#if (ZMQ_VERSION_MAJOR < 3)
             case ZMQ_HWM:
+#endif
             case ZMQ_AFFINITY:
             case ZMQ_SNDBUF:
             case ZMQ_RCVBUF:
@@ -671,7 +686,14 @@ PerlZMQ_Raw_zmq_device( device, insocket, outsocket )
         PerlZMQ_Raw_Socket *insocket;
         PerlZMQ_Raw_Socket *outsocket;
     CODE:
+#if (ZMQ_VERSION_MAJOR < 3)
         RETVAL = zmq_device( device, insocket, outsocket );
+#else
+        PERL_UNUSED_VAR(device);
+        PERL_UNUSED_VAR(insocket);
+        PERL_UNUSED_VAR(outsocket);
+        croak("zmq_device is now available in 0MQ >= 3.x");
+#endif
     OUTPUT:
         RETVAL
 
