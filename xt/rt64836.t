@@ -1,12 +1,12 @@
 use strict;
 use Test::More;
 use Test::Requires qw( Test::TCP );
-use ZeroMQ qw(ZMQ_PUB ZMQ_SUB ZMQ_SNDMORE);
+use ZMQ qw(ZMQ_PUB ZMQ_SUB ZMQ_SNDMORE);
 use Time::HiRes qw(usleep);
 
 BEGIN {
-    use_ok "ZeroMQ";
-    use_ok "ZeroMQ::Constants", ":all";
+    use_ok "ZMQ";
+    use_ok "ZMQ::Constants", ":all";
 }
 
 my $max = $ENV{ MSGCOUNT } || 100;
@@ -15,7 +15,7 @@ note "Using $max messages to test - set MSGCOUNT to a different number if you wa
 test_tcp(
     client => sub {
         my $port = shift;
-        my $ctxt = ZeroMQ::Context->new();
+        my $ctxt = ZMQ::Context->new();
         my $sock = $ctxt->socket(ZMQ_SUB);
 
         $sock->connect("tcp://127.0.0.1:$port" );
@@ -34,7 +34,7 @@ test_tcp(
     },
     server => sub {
         my $port = shift;
-        my $ctxt = ZeroMQ::Context->new();
+        my $ctxt = ZMQ::Context->new();
         my $sock = $ctxt->socket(ZMQ_PUB);
 
         note "Server Binding to port $port\n";

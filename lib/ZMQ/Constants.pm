@@ -1,7 +1,7 @@
-package ZeroMQ::Constants;
+package ZMQ::Constants;
 use strict;
 use base qw(Exporter);
-use ZeroMQ ();
+use ZMQ ();
 
 # TODO: keep in sync with docs below and Makefile.PL
 
@@ -19,7 +19,7 @@ BEGIN {
         ZMQ_VERSION_MINOR
         ZMQ_VERSION_PATCH
     );
-    my $version = ZeroMQ::version();
+    my $version = ZMQ::version();
     foreach my $symbol (@possibly_nonexistent) {
         if (! __PACKAGE__->can($symbol) ) {
             no strict 'refs';
@@ -120,13 +120,13 @@ __END__
 
 =head1 NAME
 
-ZeroMQ::Constants - ZeroMQ Constants
+ZMQ::Constants - ZeroMQ Constants
 
 =head1 EXPORTS
 
 You may choose to import one or more (using the C<:all> import tag)
 constants into your namespace by supplying arguments to the
-C<use ZeroMQ> call as shown in the synopsis above.
+C<use ZMQ> call as shown in the synopsis above.
 
 The exportable constants are:
 

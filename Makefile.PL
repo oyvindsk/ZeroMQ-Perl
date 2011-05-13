@@ -8,10 +8,10 @@ BEGIN {
     }
 }
 
-name 'ZeroMQ';
+name 'ZMQ';
 
 { # M::I is silly about multiple authors:
-    my $mainpm = 'lib/ZeroMQ.pm';
+    my $mainpm = 'lib/ZMQ.pm';
     name_from $mainpm;
     version_from $mainpm;
     perl_version_from $mainpm;

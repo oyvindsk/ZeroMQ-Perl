@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use Test::Exception;
 BEGIN {
-    use_ok "ZeroMQ::Raw", qw(
+    use_ok "ZMQ::Raw", qw(
         zmq_init
         zmq_term
     );
@@ -10,7 +10,7 @@ BEGIN {
 
 lives_ok {
     my $context = zmq_init(5);
-    isa_ok $context, "ZeroMQ::Raw::Context";
+    isa_ok $context, "ZMQ::Raw::Context";
     zmq_term( $context );
 } "sane allocation / cleanup for context";
 

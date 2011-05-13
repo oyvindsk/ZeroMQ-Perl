@@ -7,16 +7,16 @@ use Test::More;
 use Test::Requires qw( Test::TCP );
 
 BEGIN {
-    use_ok "ZeroMQ";
-    use_ok "ZeroMQ::Raw";
-    use_ok "ZeroMQ::Constants", ":all";
+    use_ok "ZMQ";
+    use_ok "ZMQ::Raw";
+    use_ok "ZMQ::Constants", ":all";
 }
 
 subtest 'blocking recv' => sub {
     test_tcp(
         client => sub {
             my $port = shift;
-            my $ctxt = ZeroMQ::Context->new();
+            my $ctxt = ZMQ::Context->new();
             my $sock = $ctxt->socket(ZMQ_SUB);
     
             $sock->connect("tcp://127.0.0.1:$port" );
@@ -29,7 +29,7 @@ subtest 'blocking recv' => sub {
         },
         server => sub {
             my $port = shift;
-            my $ctxt = ZeroMQ::Context->new();
+            my $ctxt = ZMQ::Context->new();
             my $sock = $ctxt->socket(ZMQ_PUB);
     
             $sock->bind("tcp://127.0.0.1:$port");
@@ -46,7 +46,7 @@ subtest 'non-blocking recv (fail)' => sub {
     test_tcp(
         client => sub {
             my $port = shift;
-            my $ctxt = ZeroMQ::Context->new();
+            my $ctxt = ZMQ::Context->new();
             my $sock = $ctxt->socket(ZMQ_SUB);
     
             $sock->connect("tcp://127.0.0.1:$port" );
@@ -59,7 +59,7 @@ subtest 'non-blocking recv (fail)' => sub {
         },
         server => sub {
             my $port = shift;
-            my $ctxt = ZeroMQ::Context->new();
+            my $ctxt = ZMQ::Context->new();
             my $sock = $ctxt->socket(ZMQ_PUB);
     
             $sock->bind("tcp://127.0.0.1:$port");
@@ -100,7 +100,7 @@ subtest 'non-blocking recv (success)' => sub {
         },
         server => sub {
             my $port = shift;
-            my $ctxt = ZeroMQ::Context->new();
+            my $ctxt = ZMQ::Context->new();
             my $sock = $ctxt->socket(ZMQ_PUB);
     
             $sock->bind("tcp://127.0.0.1:$port");
@@ -151,7 +151,7 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
             },
             server => sub {
                 my $port = shift;
-                my $ctxt = ZeroMQ::Context->new();
+                my $ctxt = ZMQ::Context->new();
                 my $sock = $ctxt->socket(ZMQ_PUB);
         
                 $sock->bind("tcp://127.0.0.1:$port");

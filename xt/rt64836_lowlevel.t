@@ -4,8 +4,8 @@ use Test::Requires qw( Test::TCP );
 use Data::Dumper;
 
 BEGIN {
-    use_ok "ZeroMQ::Raw";
-    use_ok "ZeroMQ::Constants", ":all";
+    use_ok "ZMQ::Raw";
+    use_ok "ZMQ::Constants", ":all";
 }
 
 my $max = $ENV{ MSGCOUNT } || 100;

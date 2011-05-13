@@ -2,13 +2,13 @@ use strict;
 use Test::More;
 use Test::TCP;
 BEGIN {
-    use_ok "ZeroMQ", qw(ZMQ_REQ ZMQ_REP);
+    use_ok "ZMQ", qw(ZMQ_REQ ZMQ_REP);
 }
 
 test_tcp(
     client => sub {
         my $port = shift;
-        my $ctxt = ZeroMQ::Context->new();
+        my $ctxt = ZMQ::Context->new();
         my $sock = $ctxt->socket(ZMQ_REQ);
         $sock->connect( "tcp://127.0.0.1:$port" );
         $sock->send("hello");
@@ -18,7 +18,7 @@ test_tcp(
     },
     server => sub {
         my $port = shift;
-        my $ctxt = ZeroMQ::Context->new();
+        my $ctxt = ZMQ::Context->new();
         my $sock = $ctxt->socket(ZMQ_REP);
         $sock->bind( "tcp://127.0.0.1:$port" );
 

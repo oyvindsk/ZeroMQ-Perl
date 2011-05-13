@@ -13,8 +13,6 @@
 #define _ERRNO        errno
 #define SET_BANG      PerlZMQ_set_bang(aTHX_ _ERRNO)
 
-inline void PerlZQM_set_bang(pTHX_ int err);
-
 #ifndef USE_ITHREADS
 typedef void      PerlZMQ_Raw_Context;
 #else
