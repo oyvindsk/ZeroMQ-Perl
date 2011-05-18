@@ -1,10 +1,20 @@
 package ZeroMQ;
+use strict;
 use ZeroMQ::Raw ();
-use ZMQ::Compat 
-    subclass => [ qw(ZeroMQ ZeroMQ::Socket) ]
-;
 
-*version = \&ZMQ::version;
+BEGIN {
+    my @klasses = ('ZeroMQ', map { "ZeroMQ::$_" } qw(Context Message Socket Poller) );
+    foreach my $klass ( @klasses ) {
+        no strict 'refs';
+        my $parent = $klass;
+        $parent =~ s/ZeroMQ/ZMQ/;
+        eval "require $parent";
+        die if $@;
+        push @{"$klass\::ISA"}, $parent;
+    }
+    *version = \&ZMQ::version;
+}
+our $VERSION = $ZMQ::VERSION;
 
 1;
 

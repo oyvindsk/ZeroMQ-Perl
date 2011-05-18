@@ -21,6 +21,7 @@ name 'ZMQ';
     author 'Steffen Mueller <smueller@cpan.org>';
     if ($Module::Install::AUTHOR) {
         readme_from $mainpm;
+        do 'tools/gentests.pl';
     }
 }
 

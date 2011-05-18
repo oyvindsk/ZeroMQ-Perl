@@ -44,7 +44,7 @@ sub _subclass {
         next if $ALIASED{$to}++;
 
         no strict 'refs';
-        if ( ! %{"$from\::"}) {
+        if ( ! scalar %{"$from\::"}) {
             eval "require $from";
             die if $@;
         }
