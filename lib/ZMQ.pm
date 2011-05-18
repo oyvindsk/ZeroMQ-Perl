@@ -130,6 +130,9 @@ The C<ZMQ> module is a wrapper of the 0MQ message passing library for Perl.
 It's a thin wrapper around the C API. Please read L<http://zeromq.org> for
 more details on ZMQ.
 
+For standardization purposes, this distribution may sometimes be referred to
+as B<perlzmq> in other documentation. The Perl I<module> name however, is ZMQ.
+
 =head1 CLASS WALKTHROUGH
 
 =over 4
