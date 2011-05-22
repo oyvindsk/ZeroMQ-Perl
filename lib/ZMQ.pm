@@ -317,7 +317,7 @@ L<ZMQ::Raw>, L<ZMQ::Context>, L<ZMQ::Socket>, L<ZMQ::Message>
 
 L<http://zeromq.org>
 
-L<http://github.com/lestrrat/ZoroMQ-Perl>
+L<http://github.com/lestrrat/ZeroMQ-Perl>
 
 =head1 AUTHOR
 
