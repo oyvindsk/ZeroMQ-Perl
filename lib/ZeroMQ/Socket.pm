@@ -41,18 +41,18 @@ sub socket {
     $_[0]->{_socket};
 }
 
-sub recv {
+sub recvmsg {
     my ($self, $flags) = @_;
 
     $flags ||= 0;
-    my $rawmsg = ZeroMQ::Raw::zmq_recv( $self->socket, $flags );
+    my $rawmsg = ZeroMQ::Raw::zmq_recvmsg( $self->socket, $flags );
     return $rawmsg ?
         ZeroMQ::Message->new_from_message( $rawmsg ) :
         ()
     ;
 }
 
-sub send {
+sub sendmsgmsg {
     my ($self, $msg, $flags) = @_;
 
     if (blessed $msg and $msg->isa( 'ZeroMQ::Message' ) ) {
@@ -61,10 +61,10 @@ sub send {
 
     $flags ||= 0;
 
-    ZeroMQ::Raw::zmq_send( $self->socket, $msg, $flags );
+    ZeroMQ::Raw::zmq_sendmsgmsg( $self->socket, $msg, $flags );
 }
 
-sub recv_as {
+sub recvmsg_as {
     my ($self, $type, $flags) = @_;
 
     my $deserializer = ZeroMQ->_get_deserializer( $type );
@@ -72,11 +72,11 @@ sub recv_as {
         Carp::croak("No deserializer $type found");
     }
 
-    my $msg = $self->recv( $flags );
+    my $msg = $self->recvmsg( $flags );
     $deserializer->( $msg->data );
 }
 
-sub send_as {
+sub sendmsgmsg_as {
     my ($self, $type, $data) = @_;
 
     my $serializer = ZeroMQ->_get_serializer( $type );
@@ -84,7 +84,7 @@ sub send_as {
         Carp::croak("No serializer $type found");
     }
 
-    $self->send( $serializer->( $data ) );
+    $self->sendmsgmsg( $serializer->( $data ) );
 }
 
 1;
@@ -140,7 +140,7 @@ For detailed explanations of the socket types, check the official
 
 =item Request-reply pattern
 
-The C<ZMQ_REQ> type is for the client that sends, then receives.
+The C<ZMQ_REQ> type is for the client that sendmsgmsgs, then receives.
 The C<ZMQ_REP> type is for the server that receives a message, then answers.
 
 =item Publish-subscribe pattern
@@ -150,7 +150,7 @@ subscribers only. The C<ZMQ_SUB> type is for subscribers that receive messages.
 
 =item Pipeline pattern
 
-The C<ZMQ_UPSTREAM> socket type sends messages in a pipeline pattern.
+The C<ZMQ_UPSTREAM> socket type sendmsgmsgs messages in a pipeline pattern.
 C<ZMQ_DOWNSTREAM> receives them.
 
 =item Exclusive pair pattern
@@ -221,19 +221,19 @@ see the documentation for C<bind($endpoint)> above.
 
 =head2 close
 
-=head2 send
+=head2 sendmsgmsg
 
-The C<send($msg, $flags)> method queues the given message to be sent to the
+The C<sendmsgmsg($msg, $flags)> method queues the given message to be sent to the
 socket. The flags argument is a combination of the flags defined below.
 
-=head2 send_as( $type, $message, $flags )
+=head2 sendmsgmsg_as( $type, $message, $flags )
 
 =over 2
 
 =item ZMQ_NOBLOCK
 
 Specifies that the operation should be performed in non-blocking mode.
-If the message cannot be queued on the socket, the C<send()> method
+If the message cannot be queued on the socket, the C<sendmsgmsg()> method
 fails with errno set to EAGAIN.
 
 =item ZMQ_SNDMORE
@@ -244,15 +244,15 @@ for details regarding multi-part messages.
 
 =back
 
-=head2 recv
+=head2 recvmsg
 
-The C<my $msg = $sock-E<gt>recv($flags)> method receives a message from
+The C<my $msg = $sock-E<gt>recvmsg($flags)> method receives a message from
 the socket and returns it as a new C<ZeroMQ::Message> object.
 If there are no messages available on the specified socket
-the C<recv()> method blocks until the request can be satisfied.
+the C<recvmsg()> method blocks until the request can be satisfied.
 The flags argument is a combination of the flags defined below.
 
-=head2 recv_as( $type, $flags )
+=head2 recvmsg_as( $type, $flags )
 
 =over 2
 
@@ -260,7 +260,7 @@ The flags argument is a combination of the flags defined below.
 
 Specifies that the operation should be performed in non-blocking mode.
 If there are no messages available on the specified socket, the
-C<$sock-E<gt>recv(ZMQ_NOBLOCK)> method call returns C<undef> and sets C<$ERRNO>
+C<$sock-E<gt>recvmsg(ZMQ_NOBLOCK)> method call returns C<undef> and sets C<$ERRNO>
 to C<EAGAIN>.
 
 =back
