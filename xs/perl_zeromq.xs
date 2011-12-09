@@ -448,7 +448,7 @@ PerlZMQ_Raw_zmq_bind(socket, addr)
         RETVAL
 
 PerlZMQ_Raw_Message *
-PerlZMQ_Raw_zmq_recv(socket, flags = 0)
+PerlZMQ_Raw_zmq_recvmsg(socket, flags = 0)
         PerlZMQ_Raw_Socket *socket;
         int flags;
     PREINIT:
@@ -456,28 +456,28 @@ PerlZMQ_Raw_zmq_recv(socket, flags = 0)
         int rv;
         zmq_msg_t msg;
     CODE:
-        PerlZMQ_trace( "START zmq_recv" );
+        PerlZMQ_trace( "START zmq_recvmsg" );
         RETVAL = NULL;
         zmq_msg_init(&msg);
-        rv = zmq_recv(socket->socket, &msg, flags);
-        PerlZMQ_trace(" + zmq recv with flags %d", flags);
-        PerlZMQ_trace(" + zmq_recv returned with rv '%d'", rv);
+        rv = zmq_recvmsg(socket->socket, &msg, flags);
+        PerlZMQ_trace(" + zmq_recvmsg with flags %d", flags);
+        PerlZMQ_trace(" + zmq_recvmsg returned with rv '%d'", rv);
         if (rv != 0) {
             SET_BANG;
             zmq_msg_close(&msg);
-            PerlZMQ_trace(" + zmq_recv got bad status, closing temporary message");
+            PerlZMQ_trace(" + zmq_recvmsg got bad status, closing temporary message");
         } else {
             Newxz(RETVAL, 1, PerlZMQ_Raw_Message);
             zmq_msg_init(RETVAL);
             zmq_msg_copy( RETVAL, &msg );
             zmq_msg_close(&msg);
-            PerlZMQ_trace(" + zmq_recv created message %p", RETVAL );
+            PerlZMQ_trace(" + zmq_recvmsg created message %p", RETVAL );
         }
     OUTPUT:
         RETVAL
 
 int
-PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
+PerlZMQ_Raw_zmq_sendmsg(socket, message, flags = 0)
         PerlZMQ_Raw_Socket *socket;
         SV *message;
         int flags;
@@ -497,7 +497,7 @@ PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
                 croak("Got invalid message object");
             }
             
-            RETVAL = zmq_send(socket->socket, msg, flags);
+            RETVAL = zmq_sendmsg(socket->socket, msg, flags);
         } else {
             STRLEN data_len;
             char *x_data;
@@ -507,7 +507,7 @@ PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
             Newxz(x_data, data_len, char);
             Copy(data, x_data, data_len, char);
             zmq_msg_init_data(&msg, x_data, data_len, PerlZMQ_free_string, NULL);
-            RETVAL = zmq_send(socket->socket, &msg, flags);
+            RETVAL = zmq_sendmsg(socket->socket, &msg, flags);
             zmq_msg_close( &msg ); 
         }
     OUTPUT:
@@ -539,17 +539,16 @@ PerlZMQ_Raw_zmq_getsockopt(sock, option)
                 break;
 
             case ZMQ_RCVMORE:
-            case ZMQ_SWAP:
             case ZMQ_RATE:
             case ZMQ_RECOVERY_IVL:
-            case ZMQ_MCAST_LOOP:
                 len = sizeof(i64);
                 status = zmq_getsockopt(sock->socket, option, &i64, &len);
                 if(status == 0)
                     RETVAL = newSViv(i64);
                 break;
 
-            case ZMQ_HWM:
+            case ZMQ_RCVHWM:
+            case ZMQ_SNDHWM:
             case ZMQ_AFFINITY:
             case ZMQ_SNDBUF:
             case ZMQ_RCVBUF:
@@ -611,15 +610,14 @@ PerlZMQ_Raw_zmq_setsockopt(sock, option, value)
                 RETVAL = zmq_setsockopt(sock->socket, option, ptr, len);
                 break;
 
-            case ZMQ_SWAP:
             case ZMQ_RATE:
             case ZMQ_RECOVERY_IVL:
-            case ZMQ_MCAST_LOOP:
                 i64 = SvIV(value);
                 RETVAL = zmq_setsockopt(sock->socket, option, &i64, sizeof(int64_t));
                 break;
 
-            case ZMQ_HWM:
+            case ZMQ_SNDHWM:
+            case ZMQ_RCVHWM:
             case ZMQ_AFFINITY:
             case ZMQ_SNDBUF:
             case ZMQ_RCVBUF:
