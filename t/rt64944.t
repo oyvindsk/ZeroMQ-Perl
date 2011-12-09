@@ -104,7 +104,7 @@ subtest 'non-blocking recv (success)' => sub {
             socket => $sock,
             events => ZMQ_POLLIN,
             callback => sub {
-                while (my $msg = zmq_recv( $sock, ZMQ_RCVMORE)) {
+                while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
                     is ( zmq_msg_data( $msg ), $recvd + 1 );
                     $recvd++;
                 }
@@ -143,7 +143,7 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
     my $t;
     my $fh = zmq_getsockopt( $sock, ZMQ_FD );
     my $w; $w = AE::io( $fh, 0, sub {
-        while (my $msg = zmq_recv( $sock, ZMQ_RCVMORE)) {
+        while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
             is ( zmq_msg_data( $msg ), $recvd + 1 );
             $recvd++;
             if ( $recvd >= 10 ) {

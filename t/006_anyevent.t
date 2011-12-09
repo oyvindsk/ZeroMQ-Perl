@@ -23,7 +23,7 @@ my $server = Test::TCP->new(code => sub {
                     socket   => $sock,
                     events   => ZMQ_POLLIN,
                     callback => sub {
-                        $msg = zmq_recv( $sock, ZMQ_RCVMORE );
+                        $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE );
                     }
                 },
             ], 5);
@@ -37,7 +37,7 @@ my $server = Test::TCP->new(code => sub {
 
         note " + Creating AE::io for fd";
         my $w; $w = AE::io $fh, 0, sub {
-            if (my $msg = zmq_recv( $sock, ZMQ_RCVMORE )) {
+            if (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE )) {
                 undef $w;
                 $cv->send( $msg );
             }
@@ -46,7 +46,7 @@ my $server = Test::TCP->new(code => sub {
         $msg = $cv->recv;
     }
 
-    zmq_send( $sock, zmq_msg_data( $msg ) );
+    zmq_sendmsg( $sock, zmq_msg_data( $msg ) );
     exit 0;
 });
 
@@ -58,8 +58,8 @@ zmq_connect( $sock, "tcp://127.0.0.1:$port" );
 my $data = join '.', time(), $$, rand, {};
 
 note "Sending data to server";
-zmq_send( $sock, $data );
-my $msg = zmq_recv( $sock );
+zmq_sendmsg( $sock, $data );
+my $msg = zmq_recvmsg( $sock );
 is $data, zmq_msg_data( $msg ), "Got back same data";
 
 done_testing;

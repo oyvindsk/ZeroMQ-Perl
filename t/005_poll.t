@@ -32,7 +32,7 @@ subtest 'poll with zmq sockets' => sub {
     is exception {
         zmq_bind( $rep, "inproc://polltest");
         zmq_connect( $req, "inproc://polltest");
-        zmq_send( $req, "Test");
+        zmq_sendmsg( $req, "Test");
 
         zmq_poll([
             {
