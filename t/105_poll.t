@@ -22,7 +22,7 @@ subtest 'Poller with callback' => sub {
 
     ok not $poller->has_event(0);
 
-    $req->send("Test");
+    $req->sendmsg("Test");
     $poller->poll(1);
     ok $poller->has_event(0);
 
@@ -32,7 +32,7 @@ subtest 'Poller with callback' => sub {
     $poller->poll(1);
     ok $poller->has_event(0);
 
-    $rep->recv();
+    $rep->recvmsg();
     $poller->poll(1);
     ok not $poller->has_event(0);
 };
@@ -51,7 +51,7 @@ subtest 'Poller with no callback' => sub {
         },
     );
 
-    $req->send("Test");
+    $req->sendmsg("Test");
     $poller->poll(1);
     ok $poller->has_event(0);
 };
@@ -73,11 +73,11 @@ subtest 'Poller with named poll item' => sub {
 
     ok not $poller->has_event('test_item');
 
-    $req->send("Test");
+    $req->sendmsg("Test");
     $poller->poll(1);
     ok $poller->has_event('test_item');
 
-    $rep->recv();
+    $rep->recvmsg();
     $poller->poll(1);
     ok not $poller->has_event('test_item');
 };

@@ -16,13 +16,13 @@ BEGIN {
   
     $sock->bind("inproc://myPrivateSocket");
   
-    my $client = $cxt->socket(ZMQ_PAIR); # sender
+    my $client = $cxt->socket(ZMQ_PAIR); # sendmsger
     $client->connect("inproc://myPrivateSocket");
   
-    ok(!defined($sock->recv(ZMQ_NOBLOCK())));
-    ok($client->send_as( json => $structure ) == 0);
+    ok(!defined($sock->recvmsg(ZMQ_NOBLOCK())));
+    ok($client->sendmsg_as( json => $structure ) == 0);
     
-    my $msg = $sock->recv_as( 'json' );
+    my $msg = $sock->recvmsg_as( 'json' );
     ok(defined $msg, "received defined msg");
     is_deeply($msg, $structure, "received correct message");
 }
@@ -36,13 +36,13 @@ BEGIN {
     isa_ok($sock, 'ZeroMQ::Socket');
     $sock->bind("inproc://myPrivateSocket");
 
-    my $client = $cxt->socket(ZMQ_PAIR); # sender
+    my $client = $cxt->socket(ZMQ_PAIR); # sendmsger
     $client->connect("inproc://myPrivateSocket");
 
     my $structure = {some => 'data', structure => [qw/that is json friendly/]};
-    ok($client->send_as( json => $structure ) == 0);
+    ok($client->sendmsg_as( json => $structure ) == 0);
 
-    my $msg = $sock->recv_as('json');
+    my $msg = $sock->recvmsg_as('json');
     ok(defined $msg, "received defined msg");
 
     is_deeply($msg, $structure);

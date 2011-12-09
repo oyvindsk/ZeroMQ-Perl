@@ -14,13 +14,13 @@ if ($pid == 0) {
     my $ctxt = ZeroMQ::Context->new();
     my $child = $ctxt->socket( ZMQ_REQ );
     $child->connect( "ipc://$path" );
-    $child->send( "Hello from $$" );
+    $child->sendmsg( "Hello from $$" );
     pass "Send successful";
 } elsif ($pid) {
     my $ctxt = ZeroMQ::Context->new();
     my $parent_sock = $ctxt->socket(ZMQ_REP);
     $parent_sock->bind( "ipc://$path" );
-    my $msg = $parent_sock->recv;
+    my $msg = $parent_sock->recvmsg;
     is $msg->data, "Hello from $pid", "message is the expected message";
     waitpid $pid, 0;
 } else {

@@ -24,14 +24,14 @@ subtest 'basic inproc communication' => sub {
     };
     ok !$@, "bind to inproc socket";
 
-    my $client = $cxt->socket(ZMQ_PAIR); # sender
+    my $client = $cxt->socket(ZMQ_PAIR); # sendmsger
     eval {
         $client->connect("inproc://myPrivateSocket");
     };
     ok !$@, "connect to inproc socket";
 
-    ok(!defined($sock->recv(ZMQ_NOBLOCK())), "recv before sending anything should return nothing");
-    ok($client->send( ZeroMQ::Message->new("Talk to me") ) == 0);
+    ok(!defined($sock->recvmsg(ZMQ_NOBLOCK())), "recvmsg before sendmsging anything should return nothing");
+    ok($client->sendmsg( ZeroMQ::Message->new("Talk to me") ) == 0);
 
     # These tests are potentially dangerous when upgrades happen....
     # I thought of plain removing, but I'll leave it for now
@@ -44,7 +44,7 @@ subtest 'basic inproc communication' => sub {
         ok($sock->getsockopt(ZMQ_RATE) == 100, "ZMQ_RATE is at default 100");
     }
 
-    my $msg = $sock->recv();
+    my $msg = $sock->recvmsg();
     ok(defined $msg, "received defined msg");
     is($msg->data, "Talk to me", "received correct message");
 
@@ -56,8 +56,8 @@ subtest 'basic inproc communication' => sub {
         blah => 'blubb',
     };
     my $frozen = nfreeze($obj);
-    ok($client->send( ZeroMQ::Message->new($frozen) ) == 0);
-    $msg = $sock->recv();
+    ok($client->sendmsg( ZeroMQ::Message->new($frozen) ) == 0);
+    $msg = $sock->recvmsg();
     ok(defined $msg, "received defined msg");
     isa_ok($msg, 'ZeroMQ::Message');
     is($msg->data(), $frozen, "got back same data");

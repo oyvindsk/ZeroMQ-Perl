@@ -1,6 +1,6 @@
 # This test file is used in xt/rt64944.t, but is also in t/
 # because it checks (1) failure cases in ZMQ_RCVMORE, and
-# (2) shows how non-blocking recv() should be handled
+# (2) shows how non-blocking recvmsg() should be handled
 
 use strict;
 use Test::More;
@@ -12,20 +12,20 @@ BEGIN {
     use_ok "ZeroMQ::Constants", ":all";
 }
 
-subtest 'blocking recv' => sub {
+subtest 'blocking recvmsg' => sub {
     my $server = Test::TCP->new(code => sub {
         my $port = shift;
-        note "START blocking recv server on port $port";
+        note "START blocking recvmsg server on port $port";
         my $ctxt = ZeroMQ::Context->new();
         my $sock = $ctxt->socket(ZMQ_PUB);
 
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->send($_);
+            $sock->sendmsg($_);
         }
         sleep 2;
-        note "END blocking recv server";
+        note "END blocking recvmsg server";
         $sock->close;
 
         exit 0;
@@ -35,17 +35,17 @@ subtest 'blocking recv' => sub {
     my $ctxt = ZeroMQ::Context->new();
     my $sock = $ctxt->socket(ZMQ_SUB);
 
-    note "blocking recv client connecting to port $port";
+    note "blocking recvmsg client connecting to port $port";
     $sock->connect("tcp://127.0.0.1:$port" );
     $sock->setsockopt(ZMQ_SUBSCRIBE, '');
 
     for(1..10) {
-        my $msg = $sock->recv();
+        my $msg = $sock->recvmsg();
         is $msg->data(), $_;
     }
 };
 
-subtest 'non-blocking recv (fail)' => sub {
+subtest 'non-blocking recvmsg (fail)' => sub {
     my $server = Test::TCP->new(code => sub {
         my $port = shift;
         my $ctxt = ZeroMQ::Context->new();
@@ -54,7 +54,7 @@ subtest 'non-blocking recv (fail)' => sub {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->send($_);
+            $sock->sendmsg($_);
         }
         sleep 2;
         exit 0;
@@ -70,13 +70,13 @@ subtest 'non-blocking recv (fail)' => sub {
     $sock->setsockopt(ZMQ_SUBSCRIBE, '');
 
     for(1..10) {
-        my $msg = $sock->recv(ZMQ_RCVMORE); # most of this call should really fail
+        my $msg = $sock->recvmsg(ZMQ_RCVMORE); # most of this call should really fail
     }
     ok(1); # dummy - this is just here to find leakage
 };
 
-# Code excericising zmq_poll to do non-blocking recv()
-subtest 'non-blocking recv (success)' => sub {
+# Code excericising zmq_poll to do non-blocking recvmsg()
+subtest 'non-blocking recvmsg (success)' => sub {
     my $server = Test::TCP->new( code => sub {
         my $port = shift;
         my $ctxt = ZeroMQ::Context->new();
@@ -85,7 +85,7 @@ subtest 'non-blocking recv (success)' => sub {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->send($_);
+            $sock->sendmsg($_);
         }
         sleep 2;
         exit 0;
@@ -98,23 +98,23 @@ subtest 'non-blocking recv (success)' => sub {
     zmq_connect( $sock, "tcp://127.0.0.1:$port" );
     zmq_setsockopt( $sock, ZMQ_SUBSCRIBE, '');
     my $timeout = time() + 30;
-    my $recvd = 0;
-    while ( $timeout > time() && $recvd < 10 ) {
+    my $recvmsgd = 0;
+    while ( $timeout > time() && $recvmsgd < 10 ) {
         zmq_poll( [ {
             socket => $sock,
             events => ZMQ_POLLIN,
             callback => sub {
-                while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
-                    is ( zmq_msg_data( $msg ), $recvd + 1 );
-                    $recvd++;
+                while (my $msg = zmq_recvmsgmsg( $sock, ZMQ_RCVMORE)) {
+                    is ( zmq_msg_data( $msg ), $recvmsgd + 1 );
+                    $recvmsgd++;
                 }
             }
         } ], 1000000 ); # timeout in microseconds, so this is 1 sec
     }
-    is $recvd, 10, "got all messages";
+    is $recvmsgd, 10, "got all messages";
 };
     
-# Code excercising AnyEvent + ZMQ_FD to do non-blocking recv
+# Code excercising AnyEvent + ZMQ_FD to do non-blocking recvmsg
 if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
     AnyEvent->import; # want AE namespace
 
@@ -126,7 +126,7 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->send($_);
+            $sock->sendmsg($_);
         }
         sleep 10;
     } );
@@ -138,28 +138,28 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
     zmq_connect( $sock, "tcp://127.0.0.1:$port" );
     zmq_setsockopt( $sock, ZMQ_SUBSCRIBE, '');
     my $timeout = time() + 30;
-    my $recvd = 0;
+    my $recvmsgd = 0;
     my $cv = AE::cv();
     my $t;
     my $fh = zmq_getsockopt( $sock, ZMQ_FD );
     my $w; $w = AE::io( $fh, 0, sub {
-        while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
-            is ( zmq_msg_data( $msg ), $recvd + 1 );
-            $recvd++;
-            if ( $recvd >= 10 ) {
+        while (my $msg = zmq_recvmsgmsg( $sock, ZMQ_RCVMORE)) {
+            is ( zmq_msg_data( $msg ), $recvmsgd + 1 );
+            $recvmsgd++;
+            if ( $recvmsgd >= 10 ) {
                 undef $t;
                 undef $w;
-                $cv->send;
+                $cv->sendmsg;
             }
         }
     } );
     $t = AE::timer( 30, 1, sub {
         undef $t;
         undef $w;
-        $cv->send;
+        $cv->sendmsg;
     } );
-    $cv->recv;
-    is $recvd, 10, "got all messages";
+    $cv->recvmsg;
+    is $recvmsgd, 10, "got all messages";
 }
 
 done_testing;
