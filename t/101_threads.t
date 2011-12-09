@@ -29,14 +29,14 @@ use ZeroMQ qw/:all/;
             $sock->bind("inproc://myPrivateSocket");
         }, undef, "bound server socket";
     
-        my $client = $cxt->socket(ZMQ_PAIR); # sender
+        my $client = $cxt->socket(ZMQ_PAIR); # sendmsger
         ok $client, "created client socket";
         is exception {
             $client->connect("inproc://myPrivateSocket");
         }, undef, "connected client socket";
 
-        $client->send( "Wee Woo" );
-        my $data = $sock->recv();
+        $client->sendmsg( "Wee Woo" );
+        my $data = $sock->recvmsg();
         my $ok = 0;
         if (ok $data) {
             $ok = is $data->data, "Wee Woo", "got same message";

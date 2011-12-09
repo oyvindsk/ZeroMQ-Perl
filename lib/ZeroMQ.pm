@@ -54,20 +54,20 @@ ZeroMQ - A ZeroMQ2 wrapper for Perl
   
     my $msg;
     foreach (1..$roundtrip_count) {
-        $msg = $sock->recv();
-        $sock->send($msg);
+        $msg = $sock->recvmsg();
+        $sock->sendmsg($msg);
     }
 
     # json (if JSON.pm is available)
-    $sock->send_as( json => { foo => "bar" } );
-    my $thing = $sock->recv_as( "json" );
+    $sock->sendmsg_as( json => { foo => "bar" } );
+    my $thing = $sock->recvmsg_as( "json" );
 
     # custom serialization
     ZeroMQ::register_read_type(myformat => sub { ... });
     ZeroMQ::register_write_type(myformat => sub { .. });
 
-    $sock->send_as( myformat => $data ); # serialize using above callback
-    my $thing = $sock->recv_as( "myformat" );
+    $sock->sendmsg_as( myformat => $data ); # serialize using above callback
+    my $thing = $sock->recvmsg_as( "myformat" );
 
 =head1 SYNOPSIS ( LOW-LEVEL API )
 
@@ -90,8 +90,8 @@ ZeroMQ - A ZeroMQ2 wrapper for Perl
     my $rv   = zmq_setsockopt( $socket, $option, $value );
     my $val  = zmq_getsockopt( $socket, $option );
     my $rv   = zmq_bind( $sock, $addr );
-    my $rv   = zmq_send( $sock, $msg, $flags );
-    my $msg  = zmq_recv( $sock, $flags );
+    my $rv   = zmq_sendmsg( $sock, $msg, $flags );
+    my $msg  = zmq_recvmsg( $sock, $flags );
 
 =head1 INSTALLATION
 
@@ -174,18 +174,18 @@ and on the client side:
 
 The underlying zeromq library offers TCP, multicast, in-process, and ipc connection patterns. Read the zeromq manual for more details on other ways to setup the socket.
 
-When sending data, you can either pass a ZeroMQ::Message object or a Perl string. 
+When sendmsging data, you can either pass a ZeroMQ::Message object or a Perl string. 
 
-    # the following two send() calls are equivalent
+    # the following two sendmsg() calls are equivalent
     my $msg = ZeroMQ::Message->new( "a simple message" );
-    $socket->send( $msg );
-    $socket->send( "a simple message" ); 
+    $socket->sendmsg( $msg );
+    $socket->sendmsg( "a simple message" ); 
 
 In most cases using ZeroMQ::Message is redundunt, so you will most likely use the string version.
 
-To receive, simply call C<recv()> on the socket
+To receive, simply call C<recvmsg()> on the socket
 
-    my $msg = $socket->recv;
+    my $msg = $socket->recvmsg;
 
 The received message is an instance of ZeroMQ::Message object, and you can access the content held in the message via the C<data()> method:
 
@@ -204,13 +204,13 @@ JSON.pm installed):
     ZeroMQ::register_write_type('json' => \&JSON::encode_json);
     ZeroMQ::register_read_type('json' => \&JSON::decode_json);
 
-Then you can use C<send_as()> and C<recv_as()> to specify the serialization 
+Then you can use C<sendmsg_as()> and C<recvmsg_as()> to specify the serialization 
 type as the first argument:
 
     my $ctxt = ZeroMQ::Context->new();
     my $sock = $ctxt->socket( ZMQ_REQ );
 
-    $sock->send_as( json => $complex_perl_data_structure );
+    $sock->sendmsg_as( json => $complex_perl_data_structure );
 
 The otherside will receive a JSON encoded data. The receivind side
 can be written as:
@@ -218,7 +218,7 @@ can be written as:
     my $ctxt = ZeroMQ::Context->new();
     my $sock = $ctxt->socket( ZMQ_REP );
 
-    my $complex_perl_data_structure = $sock->recv_as( 'json' );
+    my $complex_perl_data_structure = $sock->recvmsg_as( 'json' );
 
 If you have JSON.pm (must be 2.00 or above), then the JSON serializer / 
 deserializer is automatically enabled. If you want to tweak the serializer
@@ -258,7 +258,7 @@ descriptor, so use that to integrate ZeroMQ and AnyEvent:
     my $socket = zmq_socket( $ctxt, ZMQ_REP );
     my $fh = zmq_getsockopt( $socket, ZMQ_FD );
     my $w; $w = AE::io $fh, 0, sub {
-        while ( my $msg = zmq_recv( $socket, ZMQ_RCVMORE ) ) {
+        while ( my $msg = zmq_recvmsg( $socket, ZMQ_RCVMORE ) ) {
             # do something with $msg;
         }
         undef $w;
@@ -291,13 +291,13 @@ returns a 3-element list of the version numbers:
 
 =head2 register_read_type($name, \&callback)
 
-Register a read callback for a given C<$name>. This is used in C<recv_as()>.
+Register a read callback for a given C<$name>. This is used in C<recvmsg_as()>.
 The callback receives the data received from the socket.
 
 =head2 register_write_type($name, \&callback)
 
-Register a write callback for a given C<$name>. This is used in C<send_as()>
-The callback receives the Perl structure given to C<send_as()>
+Register a write callback for a given C<$name>. This is used in C<sendmsg_as()>
+The callback receives the Perl structure given to C<sendmsg_as()>
 
 =head1 CAVEATS
 

@@ -27,8 +27,8 @@ our @EXPORT = qw(
     zmq_close
     zmq_connect
     zmq_getsockopt
-    zmq_recv
-    zmq_send
+    zmq_recvmsg
+    zmq_sendmsg
     zmq_setsockopt
     zmq_socket
 
@@ -75,9 +75,9 @@ ZeroMQ::Raw - Low-level API for ZeroMQ
 
 =head2 zmq_getsockopt
 
-=head2 zmq_recv
+=head2 zmq_recvmsg
 
-=head2 zmq_send
+=head2 zmq_sendmsg
 
 =head2 zmq_setsockopt
 
