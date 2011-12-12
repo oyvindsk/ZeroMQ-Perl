@@ -41,14 +41,15 @@ if ($pid == 0) {
 
     note "[Child] waiting for recvmsg";
 
-    RECVMSG: eval {
-        local $SIG{ALRM} = sub { last RECVMSG };
+    eval {
+        local $SIG{ALRM} = sub { die "timed out" };
         alarm(5);
 
         my $msg = $parent_sock->recvmsg;
         note "[Child] verifying data in message";
         is $msg->data, "Hello from $pid", "message is the expected message";
     };
+    ok !$@, "no errors: '$@'";
 
     alarm(0);
 
