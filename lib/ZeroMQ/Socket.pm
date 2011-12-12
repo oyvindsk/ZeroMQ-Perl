@@ -235,6 +235,10 @@ see the documentation for C<bind($endpoint)> above.
 
 =head2 close
 
+=head2 send ($scalar, $flag)
+
+=head2 send_as ($type, $scalar, $flag)
+
 =head2 sendmsg
 
 The C<sendmsg($msg, $flags)> method queues the given message to be sent to the
