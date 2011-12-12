@@ -83,7 +83,7 @@ PerlZMQ_Raw_Context_mg_free( pTHX_ SV * const sv, MAGIC *const mg ) {
             PerlZMQ_trace( " + detected mg_free from creating thread %p, cleaning up", aTHX );
             zmq_term( ctxt->ctxt );
             mg->mg_ptr = NULL;
-            Safefree(ctxt);
+            Safefree(ctxt); /* free the wrapper */
         }
 #else
         PerlZMQ_trace(" + zmq context %p", ctxt);
@@ -479,7 +479,7 @@ PerlZMQ_Raw_zmq_recvmsg(socket, flags = 0)
         rv = zmq_recvmsg(socket->socket, &msg, flags);
         PerlZMQ_trace(" + zmq_recvmsg with flags %d", flags);
         PerlZMQ_trace(" + zmq_recvmsg returned with rv '%d'", rv);
-        if (rv <= 0) {
+        if (rv < 0) {
             SET_BANG;
             zmq_msg_close(&msg);
             PerlZMQ_trace(" + zmq_recvmsg got bad status, closing temporary message");
@@ -553,18 +553,18 @@ PerlZMQ_Raw_zmq_getsockopt(sock, option)
         int      status = -1;
     CODE:
         switch(option){
-            case ZMQ_TYPE:
-            case ZMQ_LINGER:
-            case ZMQ_RECONNECT_IVL:
             case ZMQ_BACKLOG:
             case ZMQ_FD:
+            case ZMQ_LINGER:
+            case ZMQ_RECONNECT_IVL:
+            case ZMQ_RCVMORE:
+            case ZMQ_TYPE:
                 len = sizeof(i);
                 status = zmq_getsockopt(sock->socket, option, &i, &len);
                 if(status == 0)
                     RETVAL = newSViv(i);
                 break;
 
-            case ZMQ_RCVMORE:
             case ZMQ_RATE:
             case ZMQ_RECOVERY_IVL:
                 len = sizeof(i64);

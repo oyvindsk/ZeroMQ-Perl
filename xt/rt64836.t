@@ -25,9 +25,10 @@ subtest 'high-level API' => sub {
         sleep 2;
         note "Server sending ordered data... (numbers 1..1000)";
         for my $c ( 0 .. ( $max - 1 ) ) {
-            $sock->send($c, ZMQ_SNDMORE);
+            is $sock->send($c, -1, ZMQ_SNDMORE), length $c, "send OK";
         }
-        $sock->send("end"); # end of data stream...
+        is $sock->send("end", 3, 0), 3, "last send OK"; # end of data stream...
+        $sock->close;
         note "Sent all messages";
         exit 0;
     } );
@@ -41,13 +42,19 @@ subtest 'high-level API' => sub {
     my $data = join '.', time(), $$, rand, {};
 
     my $msg;
-    for my $cnt ( 0.. ( $max - 1 ) ) {
+    for my $cnt ( 0.. $max) { # ( $max - 1 ) ) {
+        diag "doing receive $cnt";
         $msg = $sock->recvmsg();
         my $data = $msg->data;
-        is($data, $cnt, "Expected $cnt, got $data");
+        my $rcvmore = $sock->getsockopt(ZMQ_RCVMORE);
+        if ($rcvmore) {
+            is($data, $cnt, "Expected $cnt, got $data");
+        } else {
+            is($data, 'end', "Expected '', got $data");
+            last;
+        }
     } 
-    $msg = $sock->recvmsg();
-    is( $msg->data, "end", "Done!" );
+
     note "Received all messages";
 };
 
