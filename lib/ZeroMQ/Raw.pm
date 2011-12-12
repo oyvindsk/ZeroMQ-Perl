@@ -27,7 +27,9 @@ our @EXPORT = qw(
     zmq_close
     zmq_connect
     zmq_getsockopt
+    zmq_recv
     zmq_recvmsg
+    zmq_send
     zmq_sendmsg
     zmq_setsockopt
     zmq_socket

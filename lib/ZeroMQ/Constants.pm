@@ -57,6 +57,7 @@ our %EXPORT_TAGS = (
         ZMQ_EVENTS
         ZMQ_RECONNECT_IVL
         ZMQ_TYPE
+        ZMQ_DONTWAIT
     ),
 # socket send/recv flags
     qw(

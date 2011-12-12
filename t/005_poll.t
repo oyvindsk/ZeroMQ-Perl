@@ -7,7 +7,7 @@ BEGIN {
     use_ok "ZeroMQ::Constants", ":all";
 }
 
-subtest 'basic poll with fd' => sub {
+subtest 'basic poll with regular fd' => sub {
     SKIP: {
         skip "Can't poll using fds on Windows", 2 if ($^O eq 'MSWin32');
         is exception {
@@ -26,13 +26,21 @@ subtest 'basic poll with fd' => sub {
 
 subtest 'poll with zmq sockets' => sub {
     my $ctxt = zmq_init();
-    my $req = zmq_socket( $ctxt, ZMQ_REQ );
+
+    my $ipcpath = "inproc://polltest";
+
     my $rep = zmq_socket( $ctxt, ZMQ_REP );
+    is zmq_bind( $rep, $ipcpath), 0, "bind ok to $ipcpath";
+
+    my $req = zmq_socket( $ctxt, ZMQ_REQ );
+    is zmq_connect( $req, $ipcpath), 0, "connect ok $ipcpath";
+
     my $called = 0;
     is exception {
-        zmq_bind( $rep, "inproc://polltest");
-        zmq_connect( $req, "inproc://polltest");
-        zmq_sendmsg( $req, "Test");
+        my $data = "Test";
+        if (! is zmq_send( $req, $data), length $data, "zmq_send ok") {
+            die "Failed to send data";
+        }
 
         zmq_poll([
             {
@@ -40,10 +48,10 @@ subtest 'poll with zmq sockets' => sub {
                 events   => ZMQ_POLLIN,
                 callback => sub { $called++ }
             },
-        ], 1);
+        ], 1) ;
     }, undef, "PollItem correctly handles callback";
 
-    is $called, 1;
+    is $called, 1, "zmq_poll's call back was called once";
 };
 
 done_testing;

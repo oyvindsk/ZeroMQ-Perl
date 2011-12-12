@@ -20,7 +20,11 @@ BEGIN {
     $client->connect("inproc://myPrivateSocket");
   
     ok(!defined($sock->recvmsg(ZMQ_NOBLOCK())));
-    ok($client->sendmsg_as( json => $structure ) == 0);
+
+    my $rv = $client->send_as( json => $structure );
+    if (! ok $rv > 0, "message sent succesfully") {
+        diag "Failed to send message ($rv)";
+    }
     
     my $msg = $sock->recvmsg_as( 'json' );
     ok(defined $msg, "received defined msg");
@@ -40,7 +44,10 @@ BEGIN {
     $client->connect("inproc://myPrivateSocket");
 
     my $structure = {some => 'data', structure => [qw/that is json friendly/]};
-    ok($client->sendmsg_as( json => $structure ) == 0);
+    my $rv = $client->send_as( json => $structure );
+    if (! ok $rv > 0, "message sent successfully") {
+        diag "Failed to send message ($rv)";
+    }
 
     my $msg = $sock->recvmsg_as('json');
     ok(defined $msg, "received defined msg");

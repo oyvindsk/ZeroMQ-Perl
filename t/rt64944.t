@@ -22,7 +22,7 @@ subtest 'blocking recvmsg' => sub {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->sendmsg($_);
+            $sock->send($_);
         }
         sleep 2;
         note "END blocking recvmsg server";
@@ -54,7 +54,7 @@ subtest 'non-blocking recvmsg (fail)' => sub {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->sendmsg($_);
+            $sock->send($_);
         }
         sleep 2;
         exit 0;
@@ -85,7 +85,7 @@ subtest 'non-blocking recvmsg (success)' => sub {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->sendmsg($_);
+            $sock->send($_);
         }
         sleep 2;
         exit 0;
@@ -97,14 +97,15 @@ subtest 'non-blocking recvmsg (success)' => sub {
 
     zmq_connect( $sock, "tcp://127.0.0.1:$port" );
     zmq_setsockopt( $sock, ZMQ_SUBSCRIBE, '');
-    my $timeout = time() + 30;
+    my $timeout = time() + 5;
     my $recvmsgd = 0;
     while ( $timeout > time() && $recvmsgd < 10 ) {
+diag "starting polling";
         zmq_poll( [ {
             socket => $sock,
             events => ZMQ_POLLIN,
             callback => sub {
-                while (my $msg = zmq_recvmsgmsg( $sock, ZMQ_RCVMORE)) {
+                while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
                     is ( zmq_msg_data( $msg ), $recvmsgd + 1 );
                     $recvmsgd++;
                 }
@@ -126,7 +127,7 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
         $sock->bind("tcp://127.0.0.1:$port");
         sleep 2;
         for (1..10) {
-            $sock->sendmsg($_);
+            $sock->send($_);
         }
         sleep 10;
     } );
@@ -143,22 +144,22 @@ if ($^O ne 'MSWin32' && eval { require AnyEvent } && ! $@) {
     my $t;
     my $fh = zmq_getsockopt( $sock, ZMQ_FD );
     my $w; $w = AE::io( $fh, 0, sub {
-        while (my $msg = zmq_recvmsgmsg( $sock, ZMQ_RCVMORE)) {
+        while (my $msg = zmq_recvmsg( $sock, ZMQ_RCVMORE)) {
             is ( zmq_msg_data( $msg ), $recvmsgd + 1 );
             $recvmsgd++;
             if ( $recvmsgd >= 10 ) {
                 undef $t;
                 undef $w;
-                $cv->sendmsg;
+                $cv->send;
             }
         }
     } );
     $t = AE::timer( 30, 1, sub {
         undef $t;
         undef $w;
-        $cv->sendmsg;
+        $cv->send;
     } );
-    $cv->recvmsg;
+    $cv->recv;
     is $recvmsgd, 10, "got all messages";
 }
 

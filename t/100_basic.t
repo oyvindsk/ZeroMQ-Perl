@@ -30,8 +30,12 @@ subtest 'basic inproc communication' => sub {
     };
     ok !$@, "connect to inproc socket";
 
-    ok(!defined($sock->recvmsg(ZMQ_NOBLOCK())), "recvmsg before sendmsging anything should return nothing");
-    ok($client->sendmsg( ZeroMQ::Message->new("Talk to me") ) == 0);
+    ok(!defined($sock->recvmsg(ZMQ_DONTWAIT())), "recvmsg before sendmsging anything should return nothing");
+
+    {
+    my $msg = ZeroMQ::Message->new("Talk to me");
+    ok( $client->sendmsg( $msg ) > 0, "sendmsg");
+    }
 
     # These tests are potentially dangerous when upgrades happen....
     # I thought of plain removing, but I'll leave it for now
@@ -45,8 +49,9 @@ subtest 'basic inproc communication' => sub {
     }
 
     my $msg = $sock->recvmsg();
-    ok(defined $msg, "received defined msg");
-    is($msg->data, "Talk to me", "received correct message");
+    if ( ok(defined $msg, "received defined msg")) {
+        is($msg->data, "Talk to me", "received correct message");
+    }
 
     # now test with objects, just for kicks.
 
@@ -56,7 +61,7 @@ subtest 'basic inproc communication' => sub {
         blah => 'blubb',
     };
     my $frozen = nfreeze($obj);
-    ok($client->sendmsg( ZeroMQ::Message->new($frozen) ) == 0);
+    ok($client->sendmsg( ZeroMQ::Message->new($frozen) ) >= 0, "sendmsg successful");
     $msg = $sock->recvmsg();
     ok(defined $msg, "received defined msg");
     isa_ok($msg, 'ZeroMQ::Message');

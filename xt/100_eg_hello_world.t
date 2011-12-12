@@ -11,7 +11,7 @@ my $server = Test::TCP->new( code => sub {
     my $sock = $ctxt->socket(ZMQ_REP);
     $sock->bind( "tcp://127.0.0.1:$port" );
 
-    my $message = $sock->recv();
+    my $message = $sock->recvmsg();
     is $message->data, "hello", "server receives correct data";
     $sock->send("world");
     exit 0;
@@ -23,7 +23,7 @@ my $sock = $ctxt->socket(ZMQ_REQ);
 $sock->connect( "tcp://127.0.0.1:$port" );
 $sock->send("hello");
 
-my $message = $sock->recv();
+my $message = $sock->recvmsg();
 is $message->data, "world", "client receives correct data";
 
 done_testing;

@@ -12,7 +12,7 @@ test_tcp(
         my $sock = $ctxt->socket(ZMQ_SUB);
         $sock->connect( "tcp://127.0.0.1:$port" );
         $sock->setsockopt(ZMQ_SUBSCRIBE, "W");
-        my $message = $sock->recv;
+        my $message = $sock->recvmsg;
         is $message->data, "WORLD?";
     },
     server => sub {
@@ -21,7 +21,7 @@ test_tcp(
         my $sock = $ctxt->socket(ZMQ_PUB);
         $sock->bind( "tcp://127.0.0.1:$port" );
 
-        # if this server goes away before the client can recv(), the
+        # if this server goes away before the client can recvmsg(), the
         # client waits hanging
         local $SIG{ALRM} = sub {
             die "ZMQ_ALRM_TIMEOUT";

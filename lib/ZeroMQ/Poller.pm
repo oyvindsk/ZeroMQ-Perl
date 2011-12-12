@@ -107,7 +107,6 @@ sub has_event {
 
 sub _has_event_by_index {
     my ($self, $index) = @_;
-
     return !!$self->_events->[$index];
 }
 

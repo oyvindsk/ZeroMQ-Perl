@@ -35,11 +35,12 @@ use ZeroMQ qw/:all/;
             $client->connect("inproc://myPrivateSocket");
         }, undef, "connected client socket";
 
-        $client->sendmsg( "Wee Woo" );
+        my $message = "Wee Woo Wha";
+        is $client->send( $message), length $message, "send is successful";
         my $data = $sock->recvmsg();
         my $ok = 0;
         if (ok $data) {
-            $ok = is $data->data, "Wee Woo", "got same message";
+            $ok = is $data->data, $message, "got same message";
         }
         return $ok;
     });

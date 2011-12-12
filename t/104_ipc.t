@@ -1,30 +1,62 @@
 use strict;
-use Test::More tests => 3;
+use Test::More;
 use Test::SharedFork;
-use File::Temp;
+use File::Temp qw(tempdir);
+use File::Spec;
+use File::Path ();
+use POSIX qw(SIGTERM);
 
 BEGIN {
     use_ok "ZeroMQ", qw(ZMQ_REP ZMQ_REQ);
 }
 
-my $path = File::Temp->new(UNLINK => 0);
+my $dir = tempdir();
+my $id = join ".", $$, rand();
+my $path = File::Spec->catfile( $dir, "$id.ipc" );
+my $ipc  = "ipc://$path";
+
+note "ipc $ipc";
+
 my $pid = Test::SharedFork->fork();
 if ($pid == 0) {
-    sleep 1; # hmmm, not a good way to do this...
     my $ctxt = ZeroMQ::Context->new();
+
     my $child = $ctxt->socket( ZMQ_REQ );
-    $child->connect( "ipc://$path" );
-    $child->sendmsg( "Hello from $$" );
-    pass "Send successful";
+    is $child->connect( $ipc ), 0, "conncet to $ipc successful";
+    ok $child->send( "Hello from $$" ) > 0, "send successful";
+
+    note "client done, exiting";
+    exit 0;
 } elsif ($pid) {
+    my $guard = bless {}, 'ZMQ::IPCTest::Guard';
+    sub ZMQ::IPCTest::Guard::DESTROY {
+        note "remove $dir";
+        File::Path::remove_tree($dir);
+    };
+
     my $ctxt = ZeroMQ::Context->new();
     my $parent_sock = $ctxt->socket(ZMQ_REP);
-    $parent_sock->bind( "ipc://$path" );
-    my $msg = $parent_sock->recvmsg;
-    is $msg->data, "Hello from $pid", "message is the expected message";
+    $parent_sock->bind( $ipc );
+    sleep 1;
+
+    note "[Child] waiting for recvmsg";
+
+    RECVMSG: eval {
+        local $SIG{ALRM} = sub { last RECVMSG };
+        alarm(5);
+
+        my $msg = $parent_sock->recvmsg;
+        note "[Child] verifying data in message";
+        is $msg->data, "Hello from $pid", "message is the expected message";
+    };
+
+    alarm(0);
+
+    kill SIGTERM(), $pid;
+
     waitpid $pid, 0;
 } else {
     die "Could not fork: $!";
 }
 
-unlink $path;
+done_testing;

@@ -24,11 +24,11 @@ test_tcp(
 
         my $msg;
         for my $cnt ( 0.. ( $max - 1 ) ) {
-            $msg = $sock->recv();
+            $msg = $sock->recvmsg();
             my $data = $msg->data;
             is($data, $cnt, "Expected $cnt, got $data");
         } 
-        $msg = $sock->recv();
+        $msg = $sock->recvmsg();
         is( $msg->data, "end", "Done!" );
         note "Received all messages";
     },

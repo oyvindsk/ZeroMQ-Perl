@@ -4,7 +4,7 @@
 #if (PERLZMQ_TRACE > 0)
 #define PerlZMQ_trace(...) \
     { \
-        PerlIO_printf(PerlIO_stderr(), "[perlzmq] "); \
+        PerlIO_printf(PerlIO_stderr(), "[perlzmq (%d)] ", PerlProc_getpid() ); \
         PerlIO_printf(PerlIO_stderr(), __VA_ARGS__); \
         PerlIO_printf(PerlIO_stderr(), "\n"); \
     }
@@ -15,7 +15,7 @@
 STATIC_INLINE void
 PerlZMQ_set_bang(pTHX_ int err) {
     SV *errsv = get_sv("!", GV_ADD);
-    PerlZMQ_trace("Set ERRSV ($!) to %d", err);
+    PerlZMQ_trace(" + Set ERRSV ($!) to %d", err);
     sv_setiv(errsv, err);
 }
 
@@ -63,6 +63,8 @@ PerlZMQ_Raw_Message_mg_find(pTHX_ SV* const sv, const MGVTBL* const vtbl){
         }
     }
 
+    PerlZMQ_trace( "mg_find (Message)" );
+    PerlZMQ_trace( " + SV %p", sv )
     croak("ZeroMQ::Raw::Message: Invalid ZeroMQ::Raw::Message object was passed to mg_find");
     return NULL; /* not reached */
 }
@@ -156,6 +158,7 @@ PerlZMQ_Raw_Socket_mg_free(pTHX_ SV* const sv, MAGIC* const mg)
 
 STATIC_INLINE int
 PerlZMQ_Raw_Socket_mg_dup(pTHX_ MAGIC* const mg, CLONE_PARAMS* const param){
+    PerlZMQ_trace("START mg_dup (Socket)");
 #ifdef USE_ITHREADS /* single threaded perl has no "xxx_dup()" APIs */
     mg->mg_ptr = NULL;
     PERL_UNUSED_VAR(param);
@@ -163,6 +166,7 @@ PerlZMQ_Raw_Socket_mg_dup(pTHX_ MAGIC* const mg, CLONE_PARAMS* const param){
     PERL_UNUSED_VAR(mg);
     PERL_UNUSED_VAR(param);
 #endif
+    PerlZMQ_trace("END mg_dup (Socket)");
     return 0;
 }
 
@@ -316,6 +320,7 @@ PerlZMQ_Raw_zmq_msg_init_data( data, size = -1)
         char *x_data;
         int rc;
     CODE: 
+        PerlZMQ_trace("START zmq_msg_init_data");
         if (size >= 0) {
             x_data_len = size;
         }
@@ -329,8 +334,9 @@ PerlZMQ_Raw_zmq_msg_init_data( data, size = -1)
             RETVAL = NULL;
         }
         else {
-            PerlZMQ_trace("zmq_msg_init_data created message %p", RETVAL);
+            PerlZMQ_trace(" + zmq_msg_init_data created message %p", RETVAL);
         }
+        PerlZMQ_trace("END zmq_msg_init_data");
     OUTPUT:
         RETVAL
 
@@ -338,8 +344,12 @@ SV *
 PerlZMQ_Raw_zmq_msg_data(message)
         PerlZMQ_Raw_Message *message;
     CODE:
+        PerlZMQ_trace( "START zmq_msg_data" );
+        PerlZMQ_trace( " + message content '%s'", (char *) zmq_msg_data(message) );
+        PerlZMQ_trace( " + message size '%d'", (int) zmq_msg_size(message) );
         RETVAL = newSV(0);
         sv_setpvn( RETVAL, (char *) zmq_msg_data(message), (STRLEN) zmq_msg_size(message) );
+        PerlZMQ_trace( "END zmq_msg_data" );
     OUTPUT:
         RETVAL
 
@@ -427,6 +437,7 @@ PerlZMQ_Raw_zmq_connect(socket, addr)
         PerlZMQ_trace( "START zmq_connect" );
         PerlZMQ_trace( " + socket %p", socket );
         RETVAL = zmq_connect( socket->socket, addr );
+        PerlZMQ_trace(" + zmq_connect returned with rv '%d'", RETVAL);
         if (RETVAL != 0) {
             croak( "%s", zmq_strerror( zmq_errno() ) );
         }
@@ -439,11 +450,14 @@ PerlZMQ_Raw_zmq_bind(socket, addr)
         PerlZMQ_Raw_Socket *socket;
         char *addr;
     CODE:
-        PerlZMQ_trace( "zmq_bind: socket %p", socket );
+        PerlZMQ_trace( "START zmq_bind" );
+        PerlZMQ_trace( " + socket %p", socket );
         RETVAL = zmq_bind( socket->socket, addr );
+        PerlZMQ_trace(" + zmq_bind returned with rv '%d'", RETVAL);
         if (RETVAL != 0) {
             croak( "%s", zmq_strerror( zmq_errno() ) );
         }
+        PerlZMQ_trace( "END zmq_bind" );
     OUTPUT:
         RETVAL
 
@@ -462,54 +476,59 @@ PerlZMQ_Raw_zmq_recvmsg(socket, flags = 0)
         rv = zmq_recvmsg(socket->socket, &msg, flags);
         PerlZMQ_trace(" + zmq_recvmsg with flags %d", flags);
         PerlZMQ_trace(" + zmq_recvmsg returned with rv '%d'", rv);
-        if (rv != 0) {
+        if (rv <= 0) {
             SET_BANG;
             zmq_msg_close(&msg);
             PerlZMQ_trace(" + zmq_recvmsg got bad status, closing temporary message");
         } else {
+            PerlZMQ_trace(" + message data (%s)", (char *) zmq_msg_data(&msg) );
+            PerlZMQ_trace(" + message size (%d)", zmq_msg_size(&msg) );
             Newxz(RETVAL, 1, PerlZMQ_Raw_Message);
             zmq_msg_init(RETVAL);
             zmq_msg_copy( RETVAL, &msg );
-            zmq_msg_close(&msg);
             PerlZMQ_trace(" + zmq_recvmsg created message %p", RETVAL );
+            zmq_msg_close(&msg);
         }
+        PerlZMQ_trace( "END zmq_recvmsg" );
+    OUTPUT:
+        RETVAL
+
+int
+PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
+        PerlZMQ_Raw_Socket *socket;
+        SV *message;
+        int flags;
+    PREINIT:
+        char *message_buf;
+        size_t message_len;
+    CODE:
+        PerlZMQ_trace( "START zmq_send" );
+        if (! SvOK(message))
+            croak("ZeroMQ::Raw::zmq_send(): NULL message passed");
+
+        message_buf = SvPV( message, message_len );
+
+        PerlZMQ_trace( " + buffer '%s' (%d)", message_buf, message_len );
+        PerlZMQ_trace( " + flags %d", flags);
+        RETVAL = zmq_send( socket->socket, message_buf, message_len, flags );
+        PerlZMQ_trace( " + zmq_send returned with rv '%d'", RETVAL );
+        PerlZMQ_trace( "END zmq_send" );
     OUTPUT:
         RETVAL
 
 int
 PerlZMQ_Raw_zmq_sendmsg(socket, message, flags = 0)
         PerlZMQ_Raw_Socket *socket;
-        SV *message;
+        PerlZMQ_Raw_Message *message;
         int flags;
-    PREINIT:
-        PerlZMQ_Raw_Message *msg = NULL;
     CODE:
-        if (! SvOK(message))
-            croak("ZeroMQ::Socket::send() NULL message passed");
+        PerlZMQ_trace( "START zmq_sendmsg" );
+        if (message == NULL)
+            croak("ZeroMQ::Raw::zmq_sendmsg() NULL message passed");
 
-        if (sv_isobject(message) && sv_isa(message, "ZeroMQ::Raw::Message")) {
-            MAGIC *mg = PerlZMQ_Raw_Context_mg_find(aTHX_ SvRV(message), &PerlZMQ_Raw_Message_vtbl);
-            if (mg) {
-                msg = (PerlZMQ_Raw_Message *) mg->mg_ptr;
-            }
-
-            if (msg == NULL) {
-                croak("Got invalid message object");
-            }
-            
-            RETVAL = zmq_sendmsg(socket->socket, msg, flags);
-        } else {
-            STRLEN data_len;
-            char *x_data;
-            char *data = SvPV(message, data_len);
-            zmq_msg_t msg;
-
-            Newxz(x_data, data_len, char);
-            Copy(data, x_data, data_len, char);
-            zmq_msg_init_data(&msg, x_data, data_len, PerlZMQ_free_string, NULL);
-            RETVAL = zmq_sendmsg(socket->socket, &msg, flags);
-            zmq_msg_close( &msg ); 
-        }
+        RETVAL = zmq_sendmsg(socket->socket, message, flags);
+        PerlZMQ_trace( " + zmq_sendmsg returned with rv '%d'", RETVAL );
+        PerlZMQ_trace( "END zmq_sendmsg" );
     OUTPUT:
         RETVAL
 
@@ -648,6 +667,8 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
         CV **callbacks;
         int i;
     CODE:
+        PerlZMQ_trace( "START zmq_poll" );
+
         list_len = av_len( list ) + 1;
         if (list_len <= 0) {
             XSRETURN(0);
@@ -660,6 +681,8 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
         for (i = 0; i < list_len; i++) {
             SV **svr = av_fetch( list, i, 0 );
             HV  *elm;
+
+            PerlZMQ_trace( " + processing element %d", i );
             if (svr == NULL || ! SvOK(*svr) || ! SvROK(*svr) || SvTYPE(SvRV(*svr)) != SVt_PVHV) {
                 Safefree( pollitems );
                 Safefree( callbacks );
@@ -683,7 +706,7 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
                 }
                 mg = PerlZMQ_Raw_Socket_mg_find( aTHX_ SvRV(*svr), &PerlZMQ_Raw_Socket_vtbl );
                 pollitems[i].socket = ((PerlZMQ_Raw_Socket *) mg->mg_ptr)->socket;
-                PerlZMQ_trace( " + pollitem[%d].socket = %p", i, pollitems[i].socket );
+                PerlZMQ_trace( " + via pollitem[%d].socket = %p", i, pollitems[i].socket );
             } else {
                 svr = hv_fetch( elm, "fd", 2, NULL );
                 if (svr == NULL || ! SvOK(*svr) || SvTYPE(*svr) != SVt_IV) {
@@ -692,6 +715,7 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
                     croak("Invalid 'fd' given for index %d", i);
                 }
                 pollitems[i].fd = SvIV( *svr );
+                PerlZMQ_trace( " + via pollitem[%d].fd = %d", i, pollitems[i].fd );
             }
 
             svr = hv_fetch( elm, "events", 6, NULL );
@@ -701,6 +725,7 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
                 croak("Invalid 'events' given for index %d", i);
             }
             pollitems[i].events = SvIV( *svr );
+            PerlZMQ_trace( " + going to poll events %d", pollitems[i].events );
 
             svr = hv_fetch( elm, "callback", 8, NULL );
             if (svr == NULL || ! SvOK(*svr) || ! SvROK(*svr) || SvTYPE(SvRV(*svr)) != SVt_PVCV) {
@@ -713,8 +738,17 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
 
         /* now call zmq_poll */
         RETVAL = zmq_poll( pollitems, list_len, timeout );
+        PerlZMQ_trace( " + zmq_poll returned with rv '%d'", RETVAL );
+
         for ( i = 0; i < list_len; i++ ) {
-            if (pollitems[i].revents & pollitems[i].events) {
+            PerlZMQ_trace( " + checking events for %d", i );
+            if (! pollitems[i].revents & pollitems[i].events) {
+                PerlZMQ_trace( " + no events for %d", i );
+                break;
+            }
+
+            PerlZMQ_trace( " + got events for %d", i );
+            {
                 dSP;
                 ENTER;
                 SAVETMPS;
@@ -731,6 +765,7 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
         }
         Safefree(pollitems);
         Safefree(callbacks);
+        PerlZMQ_trace( "END zmq_poll" );
     OUTPUT:
         RETVAL
 

@@ -2,6 +2,7 @@ use strict;
 use Test::More;
 use Test::Fatal;
 BEGIN {
+    use_ok "ZeroMQ::Message";
     use_ok "ZeroMQ::Raw", qw(
         zmq_msg_init
         zmq_msg_init_data
@@ -52,6 +53,12 @@ subtest "copy / move" => sub {
         is zmq_msg_data( $msg1 ), zmq_msg_data( $msg2 ), "msg1 == msg2";
         is zmq_msg_data( $msg1 ), "fogbaz", "... and msg2's data is in msg1";
     }, undef, "code lives";
+};
+
+subtest "high level API" => sub {
+    is exception {
+        my $msg = ZeroMQ::Message->new("data");
+    }, undef, "automatic garbage collection";
 };
 
 done_testing;
