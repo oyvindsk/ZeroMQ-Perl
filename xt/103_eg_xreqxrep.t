@@ -17,7 +17,7 @@ test_tcp(
         $socket->bind( "tcp://127.0.0.1:$port");
 
         while ( 1 ) {
-            my $msg = $socket->recv;
+            my $msg = $socket->recvmsg;
             next unless $msg;
             $socket->send("Thank you " . $msg->data);
         }
@@ -39,7 +39,7 @@ test_tcp(
                 my $client = $ctxt->socket( ZMQ_REQ );
                 $client->connect("tcp://127.0.0.1:$port");
                 $client->send($$);
-                my $msg = $client->recv();
+                my $msg = $client->recvmsg();
                 is $msg->data, "Thank you $$", "child $$ got reply '" . $msg->data . "'";
                 exit 0;
             }
