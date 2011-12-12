@@ -22,7 +22,7 @@ subtest 'Poller with callback' => sub {
 
     ok ! $poller->has_event(0), "has_event is false";
 
-    $req->sendmsg( ZeroMQ::Message->new("Test") );
+    $req->send( "Test" );
     $poller->poll(1);
     ok $poller->has_event(0), "has_event is true";
 
@@ -51,7 +51,7 @@ subtest 'Poller with no callback' => sub {
         },
     );
 
-    my $msg = $req->sendmsg("Test");
+    my $msg = $req->send("Test");
     $poller->poll(1);
     ok $poller->has_event(0);
 };
@@ -73,7 +73,7 @@ subtest 'Poller with named poll item' => sub {
 
     ok not $poller->has_event('test_item');
 
-    $req->sendmsg("Test");
+    $req->send("Test");
     $poller->poll(1);
     ok $poller->has_event('test_item');
 
