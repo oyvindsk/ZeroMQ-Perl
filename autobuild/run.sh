@@ -25,4 +25,4 @@ $PERL $THISDIR/cpanm -l extlib AnyEvent
 $PERL Makefile.PL
 $PERL $THISDIR/cpanm --installdeps -lextlib .
 
-$MAKE test
+$MAKE test TEST_VERBOSE=1
