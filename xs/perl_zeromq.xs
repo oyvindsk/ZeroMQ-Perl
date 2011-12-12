@@ -472,7 +472,10 @@ PerlZMQ_Raw_zmq_recvmsg(socket, flags = 0)
     CODE:
         PerlZMQ_trace( "START zmq_recvmsg" );
         RETVAL = NULL;
-        zmq_msg_init(&msg);
+        rv = zmq_msg_init(&msg);
+        if (rv != 0) {
+            croak("zmq_msg_init failed (%d)", rv);
+        }
         rv = zmq_recvmsg(socket->socket, &msg, flags);
         PerlZMQ_trace(" + zmq_recvmsg with flags %d", flags);
         PerlZMQ_trace(" + zmq_recvmsg returned with rv '%d'", rv);
@@ -497,7 +500,7 @@ int
 PerlZMQ_Raw_zmq_send(socket, message, size = -1, flags = 0)
         PerlZMQ_Raw_Socket *socket;
         SV *message;
-        size_t size;
+        int size;
         int flags;
     PREINIT:
         char *message_buf;
@@ -744,27 +747,29 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
         RETVAL = zmq_poll( pollitems, list_len, timeout );
         PerlZMQ_trace( " + zmq_poll returned with rv '%d'", RETVAL );
 
-        for ( i = 0; i < list_len; i++ ) {
-            PerlZMQ_trace( " + checking events for %d", i );
-            if (! pollitems[i].revents & pollitems[i].events) {
-                PerlZMQ_trace( " + no events for %d", i );
-                break;
-            }
+        if (RETVAL > 0) {
+            for ( i = 0; i < list_len; i++ ) {
+                PerlZMQ_trace( " + checking events for %d", i );
+                if (! pollitems[i].revents & pollitems[i].events) {
+                    PerlZMQ_trace( " + no events for %d", i );
+                    break;
+                }
 
-            PerlZMQ_trace( " + got events for %d", i );
-            {
-                dSP;
-                ENTER;
-                SAVETMPS;
-                PUSHMARK(SP);
-                PUTBACK;
+                PerlZMQ_trace( " + got events for %d", i );
+                {
+                    dSP;
+                    ENTER;
+                    SAVETMPS;
+                    PUSHMARK(SP);
+                    PUTBACK;
 
-                call_sv( (SV*)callbacks[i], G_SCALAR );
-                SPAGAIN;
+                    call_sv( (SV*)callbacks[i], G_SCALAR );
+                    SPAGAIN;
 
-                PUTBACK;
-                FREETMPS;
-                LEAVE;
+                    PUTBACK;
+                    FREETMPS;
+                    LEAVE;
+                }
             }
         }
         Safefree(pollitems);

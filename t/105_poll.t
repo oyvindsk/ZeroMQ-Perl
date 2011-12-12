@@ -6,9 +6,9 @@ use ZeroMQ qw/:all/;
 
 subtest 'Poller with callback' => sub {
     my $ctxt = ZeroMQ::Context->new();
-    my $rep = $ctxt->socket(ZMQ_REP);
+    my $rep = $ctxt->socket(ZMQ_PAIR);
     $rep->bind("inproc://polltest");
-    my $req = $ctxt->socket(ZMQ_REQ);
+    my $req = $ctxt->socket(ZMQ_PAIR);
     $req->connect("inproc://polltest");
 
     my $called = 0;
@@ -32,16 +32,16 @@ subtest 'Poller with callback' => sub {
     $poller->poll(1);
     ok $poller->has_event(0), "has_event should still be true, because we haven't received the message yet";
 
-    $rep->recvmsg();
+    my $msg = $rep->recvmsg();
     $poller->poll(1);
     ok ! $poller->has_event(0), "has_event is now false, because we picked the message up";
 };
 
 subtest 'Poller with no callback' => sub {
     my $ctxt = ZeroMQ::Context->new();
-    my $rep = $ctxt->socket(ZMQ_REP);
+    my $rep = $ctxt->socket(ZMQ_PAIR);
     $rep->bind("inproc://polltest");
-    my $req = $ctxt->socket(ZMQ_REQ);
+    my $req = $ctxt->socket(ZMQ_PAIR);
     $req->connect("inproc://polltest");
 
     my $poller = ZeroMQ::Poller->new(
@@ -58,9 +58,9 @@ subtest 'Poller with no callback' => sub {
 
 subtest 'Poller with named poll item' => sub {
     my $ctxt = ZeroMQ::Context->new();
-    my $rep = $ctxt->socket(ZMQ_REP);
+    my $rep = $ctxt->socket(ZMQ_PAIR);
     $rep->bind("inproc://polltest");
-    my $req = $ctxt->socket(ZMQ_REQ);
+    my $req = $ctxt->socket(ZMQ_PAIR);
     $req->connect("inproc://polltest");
 
     my $poller = ZeroMQ::Poller->new(
@@ -71,15 +71,14 @@ subtest 'Poller with named poll item' => sub {
         },
     );
 
-    ok not $poller->has_event('test_item');
+    ok ! $poller->has_event('test_item');
 
     $req->send("Test");
     $poller->poll(1);
-    ok $poller->has_event('test_item');
-
     $rep->recvmsg();
     $poller->poll(1);
-    ok not $poller->has_event('test_item');
+
+    ok ! $poller->has_event('test_item');
 };
 
 done_testing;

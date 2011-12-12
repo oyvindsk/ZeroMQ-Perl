@@ -22,7 +22,8 @@ sub poll {
     }
 
     $self->_clear_events();
-    zmq_poll($self->_raw_poll_items, $timeout);
+    my $poll_items = $self->_raw_poll_items;
+    zmq_poll($poll_items, $timeout);
 }
 
 sub _clear_events {
@@ -35,7 +36,7 @@ sub _clear_events {
 sub _raw_poll_items {
     my ($self) = @_;
 
-    unless ($self->{_raw_poll_items}) {
+    if (! $self->{_raw_poll_items}) {
         my @raw_poll_items;
 
         my @poll_items = $self->_poll_items;
@@ -76,7 +77,12 @@ sub _make_raw_poll_item {
     };
 
     if ( defined $poll_item->{socket} ) {
-        $raw_poll_item->{socket} = $poll_item->{socket}->socket;
+        my $socket = $poll_item->{socket};
+        if ($socket->isa( 'ZeroMQ::Raw::Socket' ) ) {
+            $raw_poll_item->{socket} = $socket;
+        } else {
+            $raw_poll_item->{socket} = $socket->socket;
+        }
     } elsif ( defined $poll_item->{fd} ) {
         $raw_poll_item->{fd} = $poll_item->{fd};
     }

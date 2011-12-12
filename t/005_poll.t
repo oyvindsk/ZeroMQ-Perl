@@ -29,10 +29,10 @@ subtest 'poll with zmq sockets' => sub {
 
     my $ipcpath = "inproc://polltest";
 
-    my $rep = zmq_socket( $ctxt, ZMQ_REP );
+    my $rep = zmq_socket( $ctxt, ZMQ_PAIR );
     is zmq_bind( $rep, $ipcpath), 0, "bind ok to $ipcpath";
 
-    my $req = zmq_socket( $ctxt, ZMQ_REQ );
+    my $req = zmq_socket( $ctxt, ZMQ_PAIR );
     is zmq_connect( $req, $ipcpath), 0, "connect ok $ipcpath";
 
     my $called = 0;
@@ -42,6 +42,7 @@ subtest 'poll with zmq sockets' => sub {
             die "Failed to send data";
         }
 
+        zmq_send( $rep, "TEST");
         zmq_poll([
             {
                 socket   => $rep,
@@ -49,6 +50,12 @@ subtest 'poll with zmq sockets' => sub {
                 callback => sub { $called++ }
             },
         ], 1) ;
+
+
+        my $msg = zmq_recvmsg( $rep );
+        if (ok $msg, "got message") {
+            is zmq_msg_data($msg), $data, "data matches";
+        }
     }, undef, "PollItem correctly handles callback";
 
     is $called, 1, "zmq_poll's call back was called once";

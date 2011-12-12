@@ -36,7 +36,7 @@ use ZeroMQ qw/:all/;
         }, undef, "connected client socket";
 
         my $message = "Wee Woo Wha";
-        is $client->send( $message), length $message, "send is successful";
+        is $client->send( $message ), length $message, "send is successful";
         my $data = $sock->recvmsg();
         my $ok = 0;
         if (ok $data) {

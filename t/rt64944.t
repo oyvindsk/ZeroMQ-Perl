@@ -100,7 +100,6 @@ subtest 'non-blocking recvmsg (success)' => sub {
     my $timeout = time() + 5;
     my $recvmsgd = 0;
     while ( $timeout > time() && $recvmsgd < 10 ) {
-diag "starting polling";
         zmq_poll( [ {
             socket => $sock,
             events => ZMQ_POLLIN,
