@@ -25,6 +25,7 @@ if ($pid == 0) {
     is $child->connect( $ipc ), 0, "conncet to $ipc successful";
     ok $child->send( "Hello from $$" ) > 0, "send successful";
 
+    sleep 6;
     note "client done, exiting";
     exit 0;
 } elsif ($pid) {
