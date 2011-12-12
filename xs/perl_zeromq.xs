@@ -750,7 +750,7 @@ PerlZMQ_Raw_zmq_poll( list, timeout = 0 )
         if (RETVAL > 0) {
             for ( i = 0; i < list_len; i++ ) {
                 PerlZMQ_trace( " + checking events for %d", i );
-                if (! pollitems[i].revents & pollitems[i].events) {
+                if (! (pollitems[i].revents & pollitems[i].events) ) {
                     PerlZMQ_trace( " + no events for %d", i );
                     break;
                 }
