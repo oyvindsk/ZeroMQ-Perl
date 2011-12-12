@@ -79,7 +79,17 @@ ZeroMQ::Raw - Low-level API for ZeroMQ
 
 =head2 zmq_recvmsg
 
-=head2 zmq_sendmsg
+=head2 $bytes_written = zmq_send( $buffer, $size, $flags )
+
+If C<$size> is set to -1, then the length is automatically calculated from $buffer. Default value is -1, but be careful, if you pass 0, then it's not the same as passing undef
+
+    # automatically calculate
+    zmq_send( $buf, undef, $flags );
+    
+    # write 0 bytes!
+    zmq_send( $buf, 0, $flags );
+
+=head2 zmq_sendmsg( $msg_object )
 
 =head2 zmq_setsockopt
 
