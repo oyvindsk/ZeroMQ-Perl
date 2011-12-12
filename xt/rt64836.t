@@ -44,7 +44,6 @@ subtest 'high-level API' => sub {
 
     my $msg;
     for my $cnt ( 0.. $max) { # ( $max - 1 ) ) {
-        diag "doing receive $cnt";
         $msg = $sock->recvmsg();
         my $data = $msg->data;
         my $rcvmore = $sock->getsockopt(ZMQ_RCVMORE);
