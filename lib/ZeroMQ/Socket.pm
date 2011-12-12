@@ -53,9 +53,13 @@ sub recvmsg {
 }
 
 sub send {
-    my ($self, $msg, $flags) = @_;
+    my ($self, $msg, $size, $flags) = @_;
+
+    if (! defined $size ) {
+        $size = -1;
+    }
     $flags ||= 0;
-    ZeroMQ::Raw::zmq_send( $self->socket, $msg, $flags );
+    ZeroMQ::Raw::zmq_send( $self->socket, $msg, $size, $flags );
 }
 
 sub sendmsg {

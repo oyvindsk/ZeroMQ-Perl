@@ -494,23 +494,27 @@ PerlZMQ_Raw_zmq_recvmsg(socket, flags = 0)
         RETVAL
 
 int
-PerlZMQ_Raw_zmq_send(socket, message, flags = 0)
+PerlZMQ_Raw_zmq_send(socket, message, size = -1, flags = 0)
         PerlZMQ_Raw_Socket *socket;
         SV *message;
+        size_t size;
         int flags;
     PREINIT:
         char *message_buf;
-        size_t message_len;
     CODE:
         PerlZMQ_trace( "START zmq_send" );
         if (! SvOK(message))
             croak("ZeroMQ::Raw::zmq_send(): NULL message passed");
 
-        message_buf = SvPV( message, message_len );
+        if ( size == -1 ) {
+            message_buf = SvPV( message, size );
+        } else {
+            message_buf = SvPV_nolen( message );
+        }
 
-        PerlZMQ_trace( " + buffer '%s' (%d)", message_buf, message_len );
+        PerlZMQ_trace( " + buffer '%s' (%d)", message_buf, size );
         PerlZMQ_trace( " + flags %d", flags);
-        RETVAL = zmq_send( socket->socket, message_buf, message_len, flags );
+        RETVAL = zmq_send( socket->socket, message_buf, size, flags );
         PerlZMQ_trace( " + zmq_send returned with rv '%d'", RETVAL );
         PerlZMQ_trace( "END zmq_send" );
     OUTPUT:
