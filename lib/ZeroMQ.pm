@@ -287,8 +287,6 @@ returns a 3-element list of the version numbers:
     my $version_string = ZeroMQ::version();
     my ($major, $minor, $patch) = ZeroMQ::version();
 
-=head2 device($type, $sock1, $sock2)
-
 =head2 register_read_type($name, \&callback)
 
 Register a read callback for a given C<$name>. This is used in C<recvmsg_as()>.
