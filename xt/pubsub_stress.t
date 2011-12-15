@@ -71,7 +71,7 @@ sub run_client {
             socket => $socket,
             events => ZMQ_POLLIN,
             callback => sub {
-                while (my $msg = zmq_recv( $socket, ZMQ_RCVMORE )) {
+                while (my $msg = zmq_recvmsg( $socket, ZMQ_RCVMORE )) {
                     my $data = zmq_msg_data( $msg );
 #                    warn $data;
                     if ($data =~ /-EXIT$/ ) {
